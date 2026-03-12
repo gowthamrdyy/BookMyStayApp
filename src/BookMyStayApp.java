@@ -1,5 +1,7 @@
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 
 abstract class Room {
     protected int numberOfBeds;
@@ -102,25 +104,79 @@ class SearchService {
     }
 }
 
+class Reservation {
+    private String guestName;
+    private String roomType;
+
+    public Reservation(String guestName, String roomType) {
+        this.guestName = guestName;
+        this.roomType = roomType;
+    }
+
+    public String getGuestName() {
+        return guestName;
+    }
+
+    public String getRoomType() {
+        return roomType;
+    }
+
+    @Override
+    public String toString() {
+        return "Reservation Request [Guest: " + guestName + ", Room Type: " + roomType + "]";
+    }
+}
+
+class BookingSystem {
+    private Queue<Reservation> requestQueue;
+
+    public BookingSystem() {
+        requestQueue = new LinkedList<>();
+    }
+
+    public void addRequest(Reservation request) {
+        requestQueue.offer(request);
+        System.out.println("Added to queue: " + request);
+    }
+
+    public void processNextRequest() {
+        if (!requestQueue.isEmpty()) {
+            Reservation request = requestQueue.poll();
+            System.out.println("Processing: " + request);
+            // Real allocation will happen in a later use case
+            System.out.println("Request prepared for allocation system.");
+        } else {
+            System.out.println("No pending requests.");
+        }
+    }
+
+    public void displayQueueStatus() {
+        System.out.println("Current queue size: " + requestQueue.size() + " request(s) waiting.");
+    }
+}
+
 public class BookMyStayApp {
     public static void main(String[] args) {
-        // Initialize Inventory
+        // Initialize Inventory and Booking System
         RoomInventory inventory = new RoomInventory();
+        BookingSystem bookingSystem = new BookingSystem();
 
-        // Initialize Search Service
-        SearchService searchService = new SearchService(inventory);
+        System.out.println("--- Submitting Booking Requests (FIFO) ---");
+        bookingSystem.addRequest(new Reservation("Alice", "Single"));
+        bookingSystem.addRequest(new Reservation("Bob", "Double"));
+        bookingSystem.addRequest(new Reservation("Charlie", "Suite"));
+        bookingSystem.addRequest(new Reservation("Diana", "Single"));
 
-        System.out.println("--- Initial Room Search ---");
-        searchService.searchAvailableRooms();
+        System.out.println("\n--- Booking Queue Status ---");
+        bookingSystem.displayQueueStatus();
 
-        // Simulating booking (reducing availability)
-        System.out.println("\n--- Updating Inventory (Simulating Bookings) ---");
-        inventory.updateAvailability("Single", 0); // Sold out
-        inventory.updateAvailability("Suite", 1);  // 1 left
+        System.out.println("\n--- Processing Next Requests ---");
+        bookingSystem.processNextRequest();
+        bookingSystem.processNextRequest();
 
-        System.out.println("\n--- Room Search After Updates ---");
-        searchService.searchAvailableRooms();
+        System.out.println("\n--- Booking Queue Status After Processing ---");
+        bookingSystem.displayQueueStatus();
 
-        System.out.println("\nVersion 4.0");
+        System.out.println("\nVersion 5.0");
     }
 }
