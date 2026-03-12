@@ -1,3 +1,6 @@
+import java.util.HashMap;
+import java.util.Map;
+
 abstract class Room {
     protected int numberOfBeds;
     protected double size;
@@ -45,23 +48,60 @@ class SuiteRoom extends Room {
     }
 }
 
+class RoomInventory {
+    private Map<String, Integer> inventory;
+
+    public RoomInventory() {
+        inventory = new HashMap<>();
+        inventory.put("Single", 5);
+        inventory.put("Double", 10);
+        inventory.put("Suite", 2);
+    }
+
+    public void updateAvailability(String roomType, int newAvailability) {
+        if (inventory.containsKey(roomType)) {
+            inventory.put(roomType, newAvailability);
+            System.out.println(roomType + " room availability updated to " + newAvailability);
+        } else {
+            System.out.println("Invalid Room Type.");
+        }
+    }
+
+    public int getAvailability(String roomType) {
+        return inventory.getOrDefault(roomType, 0);
+    }
+
+    public void displayInventory() {
+        System.out.println("Current Inventory:");
+        inventory.forEach((roomType, count) -> {
+            System.out.println(roomType + " Room Availability: " + count);
+        });
+    }
+}
+
 public class BookMyStayApp {
     public static void main(String[] args) {
         Room singleRoom = new SingleRoom();
         Room doubleRoom = new DoubleRoom();
         Room suiteRoom = new SuiteRoom();
 
-        int singleRoomAvailability = 5;
-        int doubleRoomAvailability = 10;
-        int suiteRoomAvailability = 2;
+        RoomInventory inventory = new RoomInventory();
 
-        System.out.println("Displaying predefined room types and their availability:");
+        System.out.println("Displaying predefined room types:");
         singleRoom.displayDetails();
-        System.out.println("Availability: " + singleRoomAvailability);
         doubleRoom.displayDetails();
-        System.out.println("Availability: " + doubleRoomAvailability);
         suiteRoom.displayDetails();
-        System.out.println("Availability: " + suiteRoomAvailability);
-        System.out.println("Version 2.0");
+
+        System.out.println("\n--- Centralized Inventory Status ---");
+        inventory.displayInventory();
+
+        System.out.println("\n--- Updating Inventory ---");
+        inventory.updateAvailability("Single", 4);
+        inventory.updateAvailability("Double", 8);
+
+        System.out.println("\n--- Centralized Inventory Status After Update ---");
+        inventory.displayInventory();
+
+        System.out.println("\nVersion 3.0");
     }
 }
