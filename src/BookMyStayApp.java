@@ -164,11 +164,13 @@ class BookingSystem {
 
 class RoomAllocationService {
     private RoomInventory inventory;
+    private BookingReportService reportService;
     private Map<String, Set<String>> allocatedRooms;
     private int nextRoomId;
 
-    public RoomAllocationService(RoomInventory inventory) {
+    public RoomAllocationService(RoomInventory inventory, BookingReportService reportService) {
         this.inventory = inventory;
+        this.reportService = reportService;
         this.allocatedRooms = new HashMap<>();
         this.allocatedRooms.put("Single", new HashSet<>());
         this.allocatedRooms.put("Double", new HashSet<>());
@@ -184,6 +186,7 @@ class RoomAllocationService {
             String roomId = roomType.substring(0, 1).toUpperCase() + nextRoomId++;
             if(allocatedRooms.get(roomType).add(roomId)){
                 inventory.updateAvailability(roomType, available - 1);
+                reportService.addBookingToHistory(request);
                 System.out.println("Reservation Confirmed! ID: " + request.getReservationId() + " | Guest: " + request.getGuestName() + " | Allocated Room: " + roomId);
             } else {
                 System.out.println("Reservation Failed (Double Booking Prevented) for " + roomType + " Room.");
@@ -253,17 +256,46 @@ class AddOnManager {
     }
 }
 
+class BookingReportService {
+    private List<Reservation> bookingHistory;
+
+    public BookingReportService() {
+        this.bookingHistory = new ArrayList<>();
+    }
+
+    public void addBookingToHistory(Reservation reservation) {
+        bookingHistory.add(reservation);
+    }
+
+    public void generateBookingHistoryReport() {
+        System.out.println("\n--- Booking History Report ---");
+        if (bookingHistory.isEmpty()) {
+            System.out.println("No bookings confirmed yet.");
+            return;
+        }
+
+        System.out.println("Total Confirmed Bookings: " + bookingHistory.size());
+        for (int i = 0; i < bookingHistory.size(); i++) {
+            Reservation r = bookingHistory.get(i);
+            System.out.println((i + 1) + ". Confirmed Booking: ID=" + r.getReservationId() + ", Guest=" + r.getGuestName() + ", Room=" + r.getRoomType());
+        }
+    }
+}
+
 public class BookMyStayApp {
     public static void main(String[] args) {
         RoomInventory inventory = new RoomInventory();
+        BookingReportService reportService = new BookingReportService();
         BookingSystem bookingSystem = new BookingSystem();
-        RoomAllocationService allocationService = new RoomAllocationService(inventory);
-        AddOnManager addOnManager = new AddOnManager();
+        RoomAllocationService allocationService = new RoomAllocationService(inventory, reportService);
 
         System.out.println("--- Submitting Booking Requests ---");
         bookingSystem.addRequest(new Reservation("RES101", "Alice", "Single"));
         bookingSystem.addRequest(new Reservation("RES102", "Bob", "Double"));
         bookingSystem.addRequest(new Reservation("RES103", "Charlie", "Suite"));
+        bookingSystem.addRequest(new Reservation("RES104", "Diana", "Suite"));
+        bookingSystem.addRequest(new Reservation("RES105", "Eve", "Suite"));
+
 
         System.out.println("\n--- Processing Booking Requests ---");
         while (bookingSystem.hasRequests()) {
@@ -271,22 +303,9 @@ public class BookMyStayApp {
             System.out.println("\nProcessing: " + request);
             allocationService.processReservation(request);
         }
-        
-        System.out.println("\n--- Selecting Add-On Services ---");
-        AddOnService breakfast = new AddOnService("Breakfast", 20.0);
-        AddOnService parking = new AddOnService("Parking", 15.0);
-        AddOnService spa = new AddOnService("Spa Access", 50.0);
 
-        addOnManager.addService("RES101", breakfast);
-        addOnManager.addService("RES101", parking);
+        reportService.generateBookingHistoryReport();
 
-        addOnManager.addService("RES103", spa);
-        addOnManager.addService("RES103", breakfast);
-
-        addOnManager.displayServices("RES101");
-        addOnManager.displayServices("RES102"); 
-        addOnManager.displayServices("RES103");
-
-        System.out.println("\nVersion 7.0");
+        System.out.println("\nVersion 8.0");
     }
 }
