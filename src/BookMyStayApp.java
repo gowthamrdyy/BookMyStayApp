@@ -1,7 +1,9 @@
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 
 abstract class Room {
     protected int numberOfBeds;
@@ -139,15 +141,12 @@ class BookingSystem {
         System.out.println("Added to queue: " + request);
     }
 
-    public void processNextRequest() {
-        if (!requestQueue.isEmpty()) {
-            Reservation request = requestQueue.poll();
-            System.out.println("Processing: " + request);
-            // Real allocation will happen in a later use case
-            System.out.println("Request prepared for allocation system.");
-        } else {
-            System.out.println("No pending requests.");
-        }
+    public Reservation getNextRequest() {
+        return requestQueue.poll();
+    }
+
+    public boolean hasRequests() {
+        return !requestQueue.isEmpty();
     }
 
     public void displayQueueStatus() {
@@ -155,28 +154,72 @@ class BookingSystem {
     }
 }
 
+class RoomAllocationService {
+    private RoomInventory inventory;
+    private Map<String, Set<String>> allocatedRooms;
+    private int nextRoomId;
+
+    public RoomAllocationService(RoomInventory inventory) {
+        this.inventory = inventory;
+        this.allocatedRooms = new HashMap<>();
+        this.allocatedRooms.put("Single", new HashSet<>());
+        this.allocatedRooms.put("Double", new HashSet<>());
+        this.allocatedRooms.put("Suite", new HashSet<>());
+        this.nextRoomId = 101; 
+    }
+
+    public void processReservation(Reservation request) {
+        String roomType = request.getRoomType();
+        int available = inventory.getAvailability(roomType);
+
+        if (available > 0) {
+            String roomId = roomType.substring(0, 1).toUpperCase() + nextRoomId++;
+            if(allocatedRooms.get(roomType).add(roomId)){
+                inventory.updateAvailability(roomType, available - 1);
+                System.out.println("Reservation Confirmed! Guest: " + request.getGuestName() + " | Allocated Room: " + roomId);
+            } else {
+                System.out.println("Reservation Failed (Double Booking Prevented) for " + roomType + " Room.");
+            }
+        } else {
+            System.out.println("Reservation Failed. No availability for " + roomType + " Room.");
+        }
+    }
+
+    public void displayAllocatedRooms() {
+        System.out.println("\n--- Currently Allocated Rooms ---");
+        allocatedRooms.forEach((type, rooms) -> {
+            System.out.println(type + " Rooms: " + (rooms.isEmpty() ? "None" : rooms));
+        });
+    }
+}
+
 public class BookMyStayApp {
     public static void main(String[] args) {
-        // Initialize Inventory and Booking System
         RoomInventory inventory = new RoomInventory();
         BookingSystem bookingSystem = new BookingSystem();
+        RoomAllocationService allocationService = new RoomAllocationService(inventory);
 
-        System.out.println("--- Submitting Booking Requests (FIFO) ---");
+        System.out.println("--- Submitting Booking Requests ---");
         bookingSystem.addRequest(new Reservation("Alice", "Single"));
         bookingSystem.addRequest(new Reservation("Bob", "Double"));
         bookingSystem.addRequest(new Reservation("Charlie", "Suite"));
-        bookingSystem.addRequest(new Reservation("Diana", "Single"));
+        bookingSystem.addRequest(new Reservation("Diana", "Suite"));
+        bookingSystem.addRequest(new Reservation("Eve", "Suite")); 
 
-        System.out.println("\n--- Booking Queue Status ---");
-        bookingSystem.displayQueueStatus();
+        System.out.println("\n--- Processing Booking Requests ---");
+        while (bookingSystem.hasRequests()) {
+            Reservation request = bookingSystem.getNextRequest();
+            System.out.println("\nProcessing: " + request);
+            allocationService.processReservation(request);
+        }
 
-        System.out.println("\n--- Processing Next Requests ---");
-        bookingSystem.processNextRequest();
-        bookingSystem.processNextRequest();
+        allocationService.displayAllocatedRooms();
+        
+        System.out.println("\n--- Final Inventory Status ---");
+        System.out.println("Single Room Availability: " + inventory.getAvailability("Single"));
+        System.out.println("Double Room Availability: " + inventory.getAvailability("Double"));
+        System.out.println("Suite Room Availability: " + inventory.getAvailability("Suite"));
 
-        System.out.println("\n--- Booking Queue Status After Processing ---");
-        bookingSystem.displayQueueStatus();
-
-        System.out.println("\nVersion 5.0");
+        System.out.println("\nVersion 6.0");
     }
 }
